@@ -46,37 +46,54 @@ app.post('/signin', (req, res) => {
 });
 
 // /me route to return user details based on the token
-app.get('/me', (req, res) => {
-  const authHeader = req.headers.authorization;
+app.get('/me', authMiddleware, (req, res) => {
+  // const authHeader = req.headers.authorization;
 
-  // Check if the Authorization header is present and starts with 'Bearer '
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    // Extract the token after 'Bearer '
-    const token = authHeader.split(' ')[1];
+  // // Check if the Authorization header is present and starts with 'Bearer '
+  // if (authHeader && authHeader.startsWith('Bearer ')) {
+  //   // Extract the token after 'Bearer '
+  //   const token = authHeader.split(' ')[1];
 
-    try {
-      // Verify the token
-      const decodedToken = jwt.verify(token, JWT_SECRET);
+  //   try {
+  //     // Verify the token
+  //     const decodedToken = jwt.verify(token, JWT_SECRET);
 
-      // Respond with the username (avoid sending the password)
-      res.json({
-        username: decodedToken.username,
-      });
-    } catch (error) {
-      // If the token is invalid
-      res.status(401).json({
-        message: 'Invalid token',
-      });
-    }
-  } else {
-    // If the Authorization header is missing or malformed
-    res.status(401).json({
-      message: 'Authorization header missing or malformed',
-    });
-  }
+  //     // Respond with the username (avoid sending the password)
+  //     res.json({
+  //       username: decodedToken.username,
+  //     });
+  //   } catch (error) {
+  //     // If the token is invalid
+  //     res.status(401).json({
+  //       message: 'Invalid token',
+  //     });
+  //   }
+  // } else {
+  //   // If the Authorization header is missing or malformed
+  //   res.status(401).json({
+  //     message: 'Authorization header missing or malformed',
+  //   });
+  // }
+  res.json({
+    username: req.user.username,
+  });
 });
 
 // Move app.listen outside of the route definition
 app.listen(4000, () => {
   console.log(`Server is listening on port 4000...`);
 });
+
+function authMiddleware(req, res, next) {
+  const token = req.headers.authorization;
+
+  try {
+    const decodedToken = jwt.verify(token, JWT_SECRET);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      message: 'Invalid token',
+    });
+  }
+}
