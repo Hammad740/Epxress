@@ -1,48 +1,71 @@
 const express = require('express');
 const app = express();
 const jwt = require('jsonwebtoken');
+const path = require('path');
+const morgan = require('morgan');
+const logger = require('./logger');
 const JWT_SECRET = 'Hammad';
+const cors = require('cors');
+app.use(cors());
+
 app.use(express.json());
+
 const users = [];
 
+// Setup morgan for logging
+const morganFormat = ':method :url :status :response-time ms';
+app.use(
+  morgan(morganFormat, {
+    stream: {
+      write: (message) => {
+        const logObject = {
+          method: message.split(' ')[0],
+          url: message.split(' ')[1],
+          status: message.split(' ')[2],
+          responseTime: message.split(' ')[3],
+        };
+        logger.info(JSON.stringify(logObject));
+      },
+    },
+  })
+);
+
+// Serve the HTML file
 app.get('/', (req, res) => {
-  res.sendFile('./index.html');
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Signup route
 app.post('/signup', (req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
-  users.push({
-    username,
-    password,
-  });
+  const { username, password } = req.body;
+  users.push({ username, password });
+
   res.json({
     message: 'User registered successfully!',
   });
 });
 
+// Signin route
 app.post('/signin', (req, res) => {
-  const username = req.body.username;
-  const password = req.body.password;
+  const { username, password } = req.body;
   const user = users.find(
-    (user) => user.password === password && user.username === username
+    (user) => user.username === username && user.password === password
   );
 
   if (user) {
-    try {
-      const token = jwt.sign({ username, password }, JWT_SECRET);
-      res.json({
-        message: 'User sign in successfully',
-        token,
-      });
-    } catch (error) {
-      res.json({
-        message: 'Invalid Credentials',
-      });
-    }
+    const token = jwt.sign({ username, password }, JWT_SECRET);
+    res.json({
+      message: 'User signed in successfully',
+      token,
+    });
+  } else {
+    res.status(401).json({
+      message: 'Invalid credentials',
+    });
   }
 });
 
+// Protected route for user information
 app.post('/me', authMiddleware, (req, res) => {
   const user = req.user;
   res.json({
@@ -51,6 +74,7 @@ app.post('/me', authMiddleware, (req, res) => {
   });
 });
 
+// Middleware for JWT authentication
 function authMiddleware(req, res, next) {
   const token = req.headers.authorization;
 
@@ -64,6 +88,8 @@ function authMiddleware(req, res, next) {
     });
   }
 }
-app.listen('3000', () => {
-  console.log(`Server is running on port 3000...`);
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server is running on port 3000...');
 });
