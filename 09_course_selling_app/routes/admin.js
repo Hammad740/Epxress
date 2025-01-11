@@ -1,6 +1,6 @@
 const express = require('express');
 const adminRouter = express.Router();
-
+const adminModel = require('../models/admin.model.js');
 adminRouter.get('/signup', (req, res) => {
   res.json({
     message: 'signup',
