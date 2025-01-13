@@ -42,7 +42,7 @@ adminRouter.post('/signup', async (req, res, next) => {
     });
     res.json({
       success: true,
-      message: 'signin successful',
+      message: 'signup successful',
     });
   } catch (error) {
     next(error);
@@ -105,14 +105,41 @@ adminRouter.post('/course', authAdminMiddleware, async (req, res, next) => {
     next(error);
   }
 });
-adminRouter.get('/course/bulk', (req, res) => {
+adminRouter.get('/course/bulk', authAdminMiddleware, async (req, res) => {
+  const adminId = req.userId;
+
+  const allCourse = await Course.find({
+    creatorId: adminId,
+  });
   res.json({
-    message: 'course',
+    success: true,
+    course: allCourse,
   });
 });
-adminRouter.put('/course', (req, res) => {
-  res.json({
-    message: 'course',
-  });
+
+adminRouter.put('/course', authAdminMiddleware, async (req, res) => {
+  const adminId = req.userId;
+  const { title, image, price, description, courseId } = req.body;
+  try {
+    const updatedCourse = await Course.updateOne(
+      {
+        _id: courseId,
+        creatorId: adminId,
+      },
+      {
+        title,
+        image,
+        price,
+        description,
+      }
+    );
+    res.json({
+      success: true,
+      message: 'course updated successfully',
+      courseId: courseId,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 module.exports = adminRouter;
