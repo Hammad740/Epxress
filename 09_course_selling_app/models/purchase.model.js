@@ -9,3 +9,5 @@ const purchaseSchema = new mongoose.Schema(
 );
 
 const purchaseModel = mongoose.model('Purchase', purchaseSchema);
+
+module.exports = { purchaseModel };
