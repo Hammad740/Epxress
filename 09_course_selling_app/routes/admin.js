@@ -3,9 +3,14 @@ require('dotenv').config();
 const express = require('express');
 const adminRouter = express.Router();
 const Admin = require('../models/admin.model.js').adminModel;
+const Course = require('../models/course.model.js').courseModel;
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const z = require('zod');
+const {
+  authAdminMiddleware,
+} = require('../middlewares/authAdminMiddleware.js');
+
 adminRouter.post('/signup', async (req, res, next) => {
   const { email, password, firstname, lastname } = req.body;
 
@@ -81,10 +86,24 @@ adminRouter.post('/signin', async (req, res, next) => {
   }
 });
 
-adminRouter.post('/course', (req, res) => {
-  res.json({
-    message: 'course',
-  });
+adminRouter.post('/course', authAdminMiddleware, async (req, res, next) => {
+  const adminId = req.userId;
+  const { title, description, price, image } = req.body;
+  try {
+    const course = await Course.create({
+      title,
+      description,
+      image,
+      price,
+      creatorId: adminId,
+    });
+    res.json({
+      success: true,
+      courseId: course._id,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 adminRouter.get('/course/bulk', (req, res) => {
   res.json({
